@@ -1,14 +1,13 @@
 name: Build Windows EXE
 
-# This controls when the workflow will run
+
 on:
   push:
     branches: [ "main", "master" ]
-  workflow_dispatch: # Allows you to run this manually from the Actions tab
-
+  workflow_dispatch:
+    
 jobs:
   build:
-    # This tells GitHub to boot up a Windows machine!
     runs-on: windows-latest 
 
     steps:
@@ -18,7 +17,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10' # Change this to match your Python version
+        python-version: '3.10'
 
     - name: Install dependencies
       run: |
@@ -27,7 +26,6 @@ jobs:
         pip install pyinstaller
 
     - name: Build with PyInstaller
-      # Add --noconsole here if you don't want a background terminal window
       run: pyinstaller --onefile webcam_client.py 
 
     - name: Upload EXE as Artifact
