@@ -11,8 +11,8 @@ import pystray
 CAMERA_INDEX = int(os.environ.get("DOGCAM_CAMERA_INDEX", "0"))
 TARGET_FPS = float(os.environ.get("DOGCAM_FPS", "10"))
 JPEG_QUALITY = int(os.environ.get("DOGCAM_JPEG_QUALITY", "70"))
-LINK_SOURCE_URL = os.environ.get("DOGCAM_LINK_SOURCE", "https://raw.githubusercontent.com/nngeek195/mywork/main/link.txt")
-TOKEN_SOURCE_URL = os.environ.get("DOGCAM_TOKEN_SOURCE", "https://raw.githubusercontent.com/nngeek195/mywork/main/token.txt")
+LINK_SOURCE_URL = os.environ.get("DOGCAM_LINK_SOURCE", "https://raw.githubusercontent.com/nngeek195")
+TOKEN_SOURCE_URL = os.environ.get("DOGCAM_TOKEN_SOURCE", "https://raw.githubusercontent.com/nngeek195")
 
 def fetch_text_line(url):
     try:

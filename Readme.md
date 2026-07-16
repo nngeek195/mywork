@@ -1,8 +1,3 @@
-set DOGCAM_EXPOSURE=-8
-set DOGCAM_BRIGHTNESS=100
-export DOGCAM_TOKEN=PsbEJ9Mxfi96Z0lDTSxgGAXRgROhhhfq
-export PORT=8000
-python app.py
 
 
 # Dog Cam — Setup Flow
@@ -171,3 +166,10 @@ Adjust the numbers until it looks right, then rebuild the .exe (Step 5).
 **Note:** both `token.txt` and `link.txt` are in your repo, so if it's
 public, anyone with the raw file URL can view the stream. Set the repo to
 private if that's not fine.
+
+
+set DOGCAM_EXPOSURE=-8
+set DOGCAM_BRIGHTNESS=100
+export DOGCAM_TOKEN=PsbEJ9Mxfi96Z0lDTSxgGAXRgROhhhfq
+export PORT=8000
+python app.py
