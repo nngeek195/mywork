@@ -1,0 +1,160 @@
+@echo off
+setlocal
+
+:: ============================================================
+:: Home Admin Agent - Windows SSH Installer
+:: Port: 3014
+:: Run this BAT file as Administrator
+:: ============================================================
+
+echo.
+echo ============================================
+echo       HOME ADMIN - INSTALLER
+echo ============================================
+echo.
+
+:: ------------------------------------------------------------
+:: Check Administrator privileges
+:: ------------------------------------------------------------
+net session >nul 2>&1
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Please run this file as Administrator.
+    echo.
+    pause
+    exit /b 1
+)
+
+echo [OK] Administrator privileges detected.
+echo.
+
+:: ------------------------------------------------------------
+:: Configuration
+:: ------------------------------------------------------------
+set "ADMIN_USER=HomeAdmin"
+set "SSH_PORT=3014"
+
+:: ------------------------------------------------------------
+:: Install OpenSSH Server
+:: ------------------------------------------------------------
+echo [1/6] Checking OpenSSH Server...
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$cap = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'; if ($cap.State -ne 'Installed') { Add-WindowsCapability -Online -Name $cap.Name }"
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to install OpenSSH Server.
+    pause
+    exit /b 1
+)
+
+echo [OK] OpenSSH Server installed.
+echo.
+
+:: ------------------------------------------------------------
+:: Ask for administrator password
+:: ------------------------------------------------------------
+echo [2/6] Creating/configuring administrator account...
+echo.
+echo Enter the password for %ADMIN_USER%.
+echo The password will NOT be stored in this BAT file.
+echo.
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$p = Read-Host 'Password' -AsSecureString; New-LocalUser -Name '%ADMIN_USER%' -Password $p -Description 'Home network remote administration account' -ErrorAction SilentlyContinue; Set-LocalUser -Name '%ADMIN_USER%' -Password $p -ErrorAction SilentlyContinue; Add-LocalGroupMember -Group 'Administrators' -Member '%ADMIN_USER%' -ErrorAction SilentlyContinue"
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to create/configure the account.
+    pause
+    exit /b 1
+)
+
+echo [OK] Administrator account configured.
+echo.
+
+:: ------------------------------------------------------------
+:: Configure SSH
+:: ------------------------------------------------------------
+echo [3/6] Configuring SSH...
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$cfg='C:\ProgramData\ssh\sshd_config'; if (Test-Path $cfg) { Copy-Item $cfg ($cfg+'.backup') -Force; $lines=Get-Content $cfg; $lines=$lines | Where-Object { $_ -notmatch '^\s*#?\s*Port\s+' -and $_ -notmatch '^\s*#?\s*PasswordAuthentication\s+' }; Set-Content $cfg $lines; Add-Content $cfg 'Port 3014'; Add-Content $cfg 'PasswordAuthentication yes' }"
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to configure SSH.
+    pause
+    exit /b 1
+)
+
+echo [OK] SSH configured for port 3014.
+echo.
+
+:: ------------------------------------------------------------
+:: Configure firewall
+:: ------------------------------------------------------------
+echo [4/6] Configuring Windows Firewall...
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "Remove-NetFirewallRule -DisplayName 'HomeAdmin SSH 3014' -ErrorAction SilentlyContinue; New-NetFirewallRule -DisplayName 'HomeAdmin SSH 3014' -Direction Inbound -Protocol TCP -LocalPort 3014 -Action Allow -Profile Private"
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to configure firewall.
+    pause
+    exit /b 1
+)
+
+echo [OK] Firewall rule created.
+echo.
+
+:: ------------------------------------------------------------
+:: Configure and start SSH service
+:: ------------------------------------------------------------
+echo [5/6] Configuring SSH service...
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "Set-Service -Name sshd -StartupType Automatic; Restart-Service sshd"
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to start SSH service.
+    pause
+    exit /b 1
+)
+
+echo [OK] SSH service is running.
+echo.
+
+:: ------------------------------------------------------------
+:: Display machine information
+:: ------------------------------------------------------------
+echo [6/6] Getting machine information...
+echo.
+
+hostname
+
+echo.
+echo Network addresses:
+powershell -NoProfile -Command ^
+    "Get-NetIPAddress -AddressFamily IPv4 | Where-Object {$_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*'} | Select-Object IPAddress,InterfaceAlias"
+
+echo.
+echo ============================================
+echo          INSTALLATION COMPLETE
+echo ============================================
+echo.
+echo Username : %ADMIN_USER%
+echo SSH Port : %SSH_PORT%
+echo.
+echo Connect from another PC using:
+echo.
+echo ssh -p 3014 %ADMIN_USER%@MACHINE_IP
+echo.
+echo Example:
+echo ssh -p 3014 HomeAdmin@192.168.23.32
+echo.
+echo IMPORTANT:
+echo Do NOT expose port 3014 to the Internet.
+echo Keep this machine on your trusted home network.
+echo.
+
+pause
+endlocal
